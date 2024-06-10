@@ -19,6 +19,7 @@ package org.gradle.api.tasks.testing.testng;
 import groovy.lang.MissingMethodException;
 import groovy.lang.MissingPropertyException;
 import groovy.xml.MarkupBuilder;
+import org.gradle.api.Incubating;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.internal.tasks.testing.testng.TestNGTestClassProcessor;
 import org.gradle.api.tasks.Input;
@@ -53,6 +54,7 @@ public abstract class TestNGOptions extends TestFrameworkOptions {
     public static final String DEFAULT_CONFIG_FAILURE_POLICY = TestNGTestClassProcessor.DEFAULT_CONFIG_FAILURE_POLICY;
     private static final String DEFAULT_PARALLEL_MODE = null;
     private static final int DEFAULT_THREAD_COUNT = -1;
+    private static final int DEFAULT_SUITE_THREAD_POOL_SIZE_DEFAULT = 1;
 
     private File outputDirectory;
 
@@ -68,7 +70,11 @@ public abstract class TestNGOptions extends TestFrameworkOptions {
 
     private int threadCount = DEFAULT_THREAD_COUNT;
 
+    private int suiteThreadPoolSize = DEFAULT_SUITE_THREAD_POOL_SIZE_DEFAULT;
+
     private boolean useDefaultListeners;
+
+    private String threadPoolFactoryClass;
 
     private String suiteName = "Gradle suite";
 
@@ -110,7 +116,9 @@ public abstract class TestNGOptions extends TestFrameworkOptions {
         replace(this.listeners, other.listeners);
         this.parallel = other.parallel;
         this.threadCount = other.threadCount;
+        this.suiteThreadPoolSize = other.suiteThreadPoolSize;
         this.useDefaultListeners = other.useDefaultListeners;
+        this.threadPoolFactoryClass = other.threadPoolFactoryClass;
         this.suiteName = other.suiteName;
         this.testName = other.testName;
         replace(this.suiteXmlFiles, other.suiteXmlFiles);
@@ -324,9 +332,38 @@ public abstract class TestNGOptions extends TestFrameworkOptions {
         this.threadCount = threadCount;
     }
 
+    /**
+     * The number of XML suites will run parallel
+     * @since 8.9
+     */
+    @Internal
+    @Incubating
+    public int getSuiteThreadPoolSize() {
+        return suiteThreadPoolSize;
+    }
+
+    /**
+     * Sets a custom number of XML suites will run parallel.
+     * @since 8.9
+     */
+    @Incubating
+    public void setSuiteThreadPoolSize(int suiteThreadPoolSize) {
+        this.suiteThreadPoolSize = suiteThreadPoolSize;
+    }
+
     @Internal
     public boolean getUseDefaultListeners() {
         return useDefaultListeners;
+    }
+
+    /**
+     * ThreadPoolExecutorFactory class used by TestNG
+     * @since 8.7
+     */
+    @Internal
+    @Incubating
+    public String getThreadPoolFactoryClass() {
+        return threadPoolFactoryClass;
     }
 
     /**
@@ -361,6 +398,18 @@ public abstract class TestNGOptions extends TestFrameworkOptions {
 
     public void setUseDefaultListeners(boolean useDefaultListeners) {
         this.useDefaultListeners = useDefaultListeners;
+    }
+
+    /**
+     * Sets a custom threadPoolExecutorFactory class.
+     * This should be a fully qualified class name and the class should implement org.testng.IExecutorFactory
+     * More details in https://github.com/testng-team/testng/pull/2042
+     * Requires TestNG 7.0 or higher
+     * @since 8.7
+     */
+    @Incubating
+    public void setThreadPoolFactoryClass(String threadPoolFactoryClass) {
+        this.threadPoolFactoryClass = threadPoolFactoryClass;
     }
 
     /**

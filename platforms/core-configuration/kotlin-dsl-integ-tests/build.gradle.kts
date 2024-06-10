@@ -8,6 +8,7 @@ description = "Kotlin DSL Integration Tests"
 dependencies {
     testImplementation(testFixtures(project(":kotlin-dsl")))
 
+    integTestImplementation(projects.messaging)
     integTestImplementation(project(":base-services"))
     integTestImplementation(project(":core-api"))
     integTestImplementation(project(":core"))
@@ -16,8 +17,10 @@ dependencies {
     integTestImplementation(project(":logging"))
     integTestImplementation(project(":language-jvm"))
     integTestImplementation(project(":platform-jvm"))
-    integTestImplementation("com.squareup.okhttp3:mockwebserver:3.9.1")
-    integTestImplementation(libs.futureKotlin("compiler-embeddable"))
+    integTestImplementation(libs.mockwebserver) {
+        exclude(group = "org.bouncycastle").because("MockWebServer uses a different version of BouncyCastle")
+    }
+    integTestImplementation(libs.kotlinCompilerEmbeddable)
     integTestImplementation(libs.mockitoKotlin)
 
     integTestDistributionRuntimeOnly(project(":distributions-full"))

@@ -17,17 +17,18 @@
 package configurations
 
 import common.KillProcessMode.KILL_ALL_GRADLE_PROCESSES
+import common.KillProcessMode.KILL_PROCESSES_STARTED_BY_GRADLE
 import common.Os
 import common.applyPerformanceTestSettings
 import common.buildToolGradleParameters
 import common.checkCleanM2AndAndroidUserHome
-import common.cleanUpReadOnlyDir
 import common.gradleWrapper
 import common.individualPerformanceTestArtifactRules
 import common.killProcessStep
 import common.performanceTestCommandLine
 import common.removeSubstDirOnWindows
 import common.substDirOnWindows
+import jetbrains.buildServer.configs.kotlin.BuildStep
 import jetbrains.buildServer.configs.kotlin.BuildSteps
 import jetbrains.buildServer.configs.kotlin.ParameterDisplay
 import model.CIBuildModel
@@ -53,9 +54,10 @@ class PerformanceTest(
         this.name = "$description${if (performanceTestBuildSpec.withoutDependencies) " (without dependencies)" else ""}"
         val type = performanceTestBuildSpec.type
         val os = performanceTestBuildSpec.os
+        val arch = performanceTestBuildSpec.arch
         val buildTypeThis = this
         val performanceTestTaskNames = getPerformanceTestTaskNames(performanceSubProject, testProjects, performanceTestTaskSuffix)
-        applyPerformanceTestSettings(os = os, arch = os.defaultArch, timeout = type.timeout)
+        applyPerformanceTestSettings(os = os, arch = arch, timeout = type.timeout)
         artifactRules = individualPerformanceTestArtifactRules
 
         params {
@@ -83,7 +85,6 @@ class PerformanceTest(
             steps {
                 preBuildSteps()
                 killProcessStep(buildTypeThis, KILL_ALL_GRADLE_PROCESSES, os)
-                cleanUpReadOnlyDir(os)
                 substDirOnWindows(os)
 
                 repeat(if (performanceTestBuildSpec.type == PerformanceTestType.flakinessDetection) 2 else 1) { repeatIndex: Int ->
@@ -96,7 +97,8 @@ class PerformanceTest(
                                 "${if (repeatIndex == 0) "clean" else ""} ${performanceTestTaskNames.joinToString(" ") { "$it --channel %performance.channel% ${type.extraParameters}" }}",
                                 "%performance.baselines%",
                                 extraParameters,
-                                os
+                                os,
+                                arch
                             ) + "-DenableTestDistribution=%enableTestDistribution%" +
                                 buildToolGradleParameters() +
                                 buildScanTag("PerformanceTest")
@@ -104,6 +106,7 @@ class PerformanceTest(
                     }
                 }
                 removeSubstDirOnWindows(os)
+                killProcessStep(buildTypeThis, KILL_PROCESSES_STARTED_BY_GRADLE, os, executionMode = BuildStep.ExecutionMode.ALWAYS)
                 checkCleanM2AndAndroidUserHome(os)
             }
         }

@@ -4,28 +4,38 @@ plugins {
 
 description = "Plugins for integration with native projects in XCode and Visual Studio IDEs"
 
-dependencies {
-    implementation(project(":base-services"))
-    implementation(project(":base-ide-plugins"))
-    implementation(project(":logging"))
-    implementation(project(":core-api"))
-    implementation(project(":model-core"))
-    implementation(project(":core"))
-    implementation(project(":file-collections"))
-    implementation(project(":dependency-management"))
-    implementation(project(":ide"))
-    implementation(project(":platform-base"))
-    implementation(project(":platform-native"))
-    implementation(project(":language-native"))
-    implementation(project(":testing-base"))
-    implementation(project(":testing-native"))
-    implementation(project(":test-suites-base"))
+sourceSets {
+    main {
+        // Incremental Groovy joint-compilation doesn't work with the Error Prone annotation processor
+        errorprone.enabled = false
+    }
+}
 
-    implementation(libs.groovy)
-    implementation(libs.guava)
+dependencies {
+    api(libs.groovy)
+    api(libs.guava)
+    api(libs.inject)
+    api(libs.jsr305)
+    api(libs.plist)
+    api(project(":base-ide-plugins"))
+    api(project(":base-services"))
+    api(project(":core"))
+    api(project(":core-api"))
+    api(project(":file-collections"))
+    api(project(":ide"))
+    api(project(":java-language-extensions"))
+    api(project(":language-native"))
+    api(project(":platform-base"))
+    api(project(":platform-native"))
+    api(project(":service-provider"))
+
+    implementation(project(":model-core"))
+    implementation(project(":testing-native"))
+    implementation(project(":logging-api"))
     implementation(libs.commonsLang)
-    implementation(libs.inject)
-    implementation(libs.plist)
+
+    runtimeOnly(project(":dependency-management"))
+    runtimeOnly(project(":testing-base"))
 
     testImplementation(testFixtures(project(":core")))
     testImplementation(testFixtures(project(":platform-native")))

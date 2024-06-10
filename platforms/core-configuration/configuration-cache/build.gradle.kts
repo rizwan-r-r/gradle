@@ -1,6 +1,7 @@
 plugins {
     id("gradlebuild.distribution.implementation-kotlin")
     id("gradlebuild.kotlin-dsl-sam-with-receiver")
+    id("gradlebuild.kotlin-experimental-contracts")
 }
 
 description = "Configuration cache implementation"
@@ -18,8 +19,8 @@ dependencies {
 }
 
 tasks.processResources {
-    from(zipTree(provider { configurationCacheReportPath.files.first() })) {
-        into("org/gradle/configurationcache/problems")
+    from(zipTree(configurationCacheReportPath.elements.map { it.first().asFile })) {
+        into("org/gradle/internal/cc/impl/problems")
         exclude("META-INF/**")
     }
 }
@@ -29,64 +30,70 @@ tasks.configCacheIntegTest {
     enabled = false
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-opt-in=kotlin.contracts.ExperimentalContracts",
-        )
-    }
-}
-
 dependencies {
-    implementation(project(":base-services"))
-    implementation(project(":base-services-groovy"))
-    implementation(project(":composite-builds"))
-    implementation(project(":core"))
-    implementation(project(":core-api"))
-    implementation(project(":dependency-management"))
-    implementation(project(":enterprise-operations"))
-    implementation(project(":execution"))
-    implementation(project(":file-collections"))
-    implementation(project(":file-temp"))
-    implementation(project(":file-watching"))
-    implementation(project(":functional"))
-    implementation(project(":hashing"))
-    implementation(project(":input-tracking"))
-    implementation(project(":launcher"))
-    implementation(project(":logging"))
-    implementation(project(":messaging"))
-    implementation(project(":model-core"))
-    implementation(project(":native"))
-    implementation(project(":persistent-cache"))
-    implementation(project(":plugin-use"))
-    implementation(project(":platform-jvm"))
-    implementation(project(":process-services"))
-    implementation(project(":publish"))
-    implementation(project(":resources"))
-    implementation(project(":resources-http"))
-    implementation(project(":snapshots"))
+    api(project(":base-services"))
+    api(project(":build-option"))
+    api(projects.concurrent)
+    api(projects.configurationCacheBase)
+    api(projects.configurationProblemsBase)
+    api(project(":core"))
+    api(project(":core-api"))
+    api(project(":dependency-management"))
+    api(project(":file-temp"))
+    api(projects.javaLanguageExtensions)
+    api(project(":logging-api"))
+    api(project(":messaging"))
+    api(project(":model-core"))
+    api(project(":native"))
+    api(project(":plugin-use"))
+    api(project(":resources"))
+    api(projects.serviceProvider)
+    api(project(":snapshots"))
 
-    // TODO - move the isolatable serializer to model-core to live with the isolatable infrastructure
-    implementation(project(":workers"))
+    api(libs.groovy)
+    api(libs.inject)
+    api(libs.kotlinStdlib)
 
     // TODO - it might be good to allow projects to contribute state to save and restore, rather than have this project know about everything
-    implementation(project(":tooling-api"))
-    implementation(project(":build-events"))
-    implementation(project(":native"))
-    implementation(project(":build-option"))
+    implementation(projects.beanSerializationServices)
+    implementation(projects.buildEvents)
+    implementation(projects.buildOperations)
+    implementation(projects.coreKotlinExtensions)
+    implementation(projects.coreSerializationCodecs)
+    implementation(projects.dependencyManagementSerializationCodecs)
+    implementation(projects.enterpriseOperations)
+    implementation(projects.execution)
+    implementation(projects.fileCollections)
+    implementation(projects.fileWatching)
+    implementation(projects.files)
+    implementation(projects.flowServices)
+    implementation(projects.functional)
+    implementation(projects.graphSerialization)
+    implementation(projects.guavaSerializationCodecs)
+    implementation(projects.hashing)
+    implementation(projects.inputTracking)
+    implementation(projects.logging)
+    implementation(projects.persistentCache)
+    implementation(projects.problemsApi)
+    implementation(projects.processServices)
+    implementation(projects.serialization)
+    implementation(projects.stdlibKotlinExtensions)
+    implementation(projects.stdlibSerializationCodecs)
+    implementation(projects.toolingApi)
 
-    implementation(libs.asm)
-    implementation(libs.capsule)
     implementation(libs.fastutil)
-    implementation(libs.groovy)
     implementation(libs.groovyJson)
     implementation(libs.guava)
-    implementation(libs.inject)
     implementation(libs.slf4jApi)
 
-    implementation(libs.futureKotlin("stdlib"))
-    implementation(libs.futureKotlin("reflect"))
+    runtimeOnly(project(":composite-builds"))
+    runtimeOnly(project(":resources-http"))
+    // TODO - move the isolatable serializer to model-core to live with the isolatable infrastructure
+    runtimeOnly(project(":workers"))
 
+    runtimeOnly(libs.kotlinReflect)
+
+    testImplementation(projects.io)
     testImplementation(testFixtures(project(":core")))
     testImplementation(libs.mockitoKotlin2)
     testImplementation(libs.kotlinCoroutinesDebug)
@@ -97,6 +104,7 @@ dependencies {
     integTestImplementation(project(":test-kit"))
     integTestImplementation(project(":launcher"))
     integTestImplementation(project(":cli"))
+    integTestImplementation(project(":workers"))
 
     integTestImplementation(libs.guava)
     integTestImplementation(libs.ant)
@@ -120,5 +128,5 @@ dependencies {
 }
 
 packageCycles {
-    excludePatterns.add("org/gradle/configurationcache/**")
+    excludePatterns.add("org/gradle/internal/cc/**")
 }

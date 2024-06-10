@@ -15,6 +15,7 @@
  */
 package org.gradle.launcher.daemon.client
 
+
 import org.gradle.api.internal.specs.ExplainingSpec
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.internal.remote.Address
@@ -23,6 +24,7 @@ import org.gradle.internal.remote.internal.ConnectException
 import org.gradle.internal.remote.internal.OutgoingConnector
 import org.gradle.internal.remote.internal.RemoteConnection
 import org.gradle.internal.serialize.Serializer
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.launcher.daemon.configuration.DaemonParameters
 import org.gradle.launcher.daemon.context.DaemonContext
 import org.gradle.launcher.daemon.context.DefaultDaemonContext
@@ -31,6 +33,7 @@ import org.gradle.launcher.daemon.registry.DaemonInfo
 import org.gradle.launcher.daemon.registry.EmbeddedDaemonRegistry
 import spock.lang.Specification
 
+import static org.gradle.internal.nativeintegration.services.NativeServices.NativeServicesMode
 import static org.gradle.launcher.daemon.server.api.DaemonStateControl.State.Busy
 import static org.gradle.launcher.daemon.server.api.DaemonStateControl.State.Idle
 
@@ -72,15 +75,15 @@ class DefaultDaemonConnectorTest extends Specification {
 
     def startBusyDaemon() {
         def daemonNum = daemonCounter++
-        DaemonContext context = new DefaultDaemonContext(daemonNum.toString(), javaHome, javaHome, daemonNum, 1000, [], false, DaemonParameters.Priority.NORMAL)
+        DaemonContext context = new DefaultDaemonContext(daemonNum.toString(), javaHome, JavaLanguageVersion.current(), javaHome, daemonNum, 1000, [], false, NativeServicesMode.ENABLED, DaemonParameters.Priority.NORMAL)
         def address = createAddress(daemonNum)
         registry.store(new DaemonInfo(address, context, "password".bytes, Busy))
-        return new DaemonStartupInfo(daemonNum.toString(), null, null);
+        return new DaemonStartupInfo(daemonNum.toString(), Mock(), Mock());
     }
 
     def startIdleDaemon() {
         def daemonNum = daemonCounter++
-        DaemonContext context = new DefaultDaemonContext(daemonNum.toString(), javaHome, javaHome, daemonNum, 1000, [], false, DaemonParameters.Priority.NORMAL)
+        DaemonContext context = new DefaultDaemonContext(daemonNum.toString(), javaHome, JavaLanguageVersion.current(), javaHome, daemonNum, 1000, [], false, NativeServicesMode.ENABLED, DaemonParameters.Priority.NORMAL)
         def address = createAddress(daemonNum)
         registry.store(new DaemonInfo(address, context, "password".bytes, Idle))
     }

@@ -16,6 +16,7 @@
 
 import gradlebuild.basics.GradleModuleApiAttribute
 import gradlebuild.basics.PublicApi
+import gradlebuild.basics.buildVersionQualifier
 import gradlebuild.basics.kotlindsl.configureKotlinCompilerForGradleBuild
 import gradlebuild.basics.tasks.ClasspathManifest
 import gradlebuild.basics.tasks.PackageListGenerator
@@ -94,7 +95,7 @@ val coreRuntimeClasspath by libraryResolver(listOf(coreRuntimeOnly))
 coreRuntimeClasspath.description = "Resolves to all Jars, including transitives, that make up the core of the distribution (needed to decide if a Jar goes into 'plugins' or not)"
 val agentsRuntimeClasspath by libraryResolver(listOf(agentsRuntimeOnly))
 agentsRuntimeClasspath.description = "Resolves to all Jars that need to be added as agents"
-val gradleScriptPath by startScriptResolver(":launcher")
+val gradleScriptPath by startScriptResolver(":gradle-cli-main")
 gradleScriptPath.description = "Resolves to the Gradle start scripts (bin/*) - automatically adds dependency to the :launcher project"
 val sourcesPath by sourcesResolver(listOf(coreRuntimeOnly, pluginsRuntimeOnly))
 sourcesPath.description = "Resolves the source code of all Gradle modules Jars (required for the All distribution)"
@@ -115,7 +116,7 @@ val generateRelocatedPackageList by tasks.registering(PackageListGenerator::clas
     outputFile = generatedTxtFileFor("api-relocated")
 }
 
-// Extract pubic API metadata from source code of Gradle module Jars packaged in the distribution (used by the two tasks below to handle default imports in build scripts)
+// Extract public API metadata from source code of Gradle module Jars packaged in the distribution (used by the two tasks below to handle default imports in build scripts)
 val dslMetaData by tasks.registering(ExtractDslMetaDataTask::class) {
     source(gradleApiSources)
     destinationFile = generatedBinFileFor("dsl-meta-data.bin")
@@ -262,8 +263,12 @@ fun configureDistribution(name: String, distributionSpec: CopySpec, buildDistLif
     val zipRootFolder = if (normalized) {
         moduleIdentity.version.map { "gradle-${it.baseVersion.version}" }
     } else {
-        moduleIdentity.version.map { "gradle-${it.version}" }
+        moduleIdentity.version.map { "gradle-${it.version}" }.map {
+            if (buildVersionQualifier.isPresent) it.replace("-${buildVersionQualifier.get()}", "")
+            else it
+        }
     }
+
     val installation = tasks.register<Sync>("${name}Installation") {
         group = "distribution"
         into(layout.buildDirectory.dir("$name distribution"))

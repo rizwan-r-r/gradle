@@ -7,7 +7,6 @@ import common.Os
 import common.applyPerformanceTestSettings
 import common.buildToolGradleParameters
 import common.checkCleanM2AndAndroidUserHome
-import common.cleanUpReadOnlyDir
 import common.gradleWrapper
 import common.individualPerformanceTestArtifactRules
 import common.killProcessStep
@@ -81,7 +80,6 @@ abstract class AdHocPerformanceScenario(os: Os, arch: Arch = Arch.AMD64) : Build
     val buildTypeThis = this
     steps {
         killProcessStep(buildTypeThis, KILL_ALL_GRADLE_PROCESSES, os)
-        cleanUpReadOnlyDir(os)
         substDirOnWindows(os)
         gradleWrapper {
             name = "GRADLE_RUNNER"
@@ -92,6 +90,7 @@ abstract class AdHocPerformanceScenario(os: Os, arch: Arch = Arch.AMD64) : Build
                     "%performance.baselines%",
                     """--warmups %warmups% --runs %runs% --checks %checks% --channel %channel% --profiler %profiler% %additional.gradle.parameters%""",
                     os,
+                    arch,
                     "%testJavaVersion%",
                     "%testJavaVendor%",
                 ) + buildToolGradleParameters(isContinue = false)
@@ -116,4 +115,4 @@ fun ParametrizedWithType.profilerParam(defaultProfiler: String) {
 object AdHocPerformanceScenarioLinux : AdHocPerformanceScenario(Os.LINUX)
 object AdHocPerformanceScenarioWindows : AdHocPerformanceScenario(Os.WINDOWS)
 object AdHocPerformanceScenarioMacOS : AdHocPerformanceScenario(Os.MACOS, Arch.AMD64)
-object AdHocPerformanceScenarioMacM1 : AdHocPerformanceScenario(Os.MACOS, Arch.AARCH64)
+object AdHocPerformanceScenarioMacAppleSilicon : AdHocPerformanceScenario(Os.MACOS, Arch.AARCH64)

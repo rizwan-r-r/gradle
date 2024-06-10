@@ -16,8 +16,6 @@
 
 package org.gradle.internal.component.model;
 
-import com.google.common.collect.ImmutableList;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
@@ -33,22 +31,18 @@ import org.gradle.internal.resolve.resolver.ArtifactResolver;
 import org.gradle.internal.resolve.result.BuildableArtifactSetResolveResult;
 
 import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-public abstract class AbstractComponentGraphResolveState<T extends ComponentGraphResolveMetadata, S extends ComponentResolveMetadata> implements ComponentGraphResolveState, ComponentArtifactResolveState {
+public abstract class AbstractComponentGraphResolveState<T extends ComponentGraphResolveMetadata> implements ComponentGraphResolveState, ComponentArtifactResolveState {
     private final long instanceId;
     private final T graphMetadata;
-    private final S artifactMetadata;
     private final AttributeDesugaring attributeDesugaring;
 
-    public AbstractComponentGraphResolveState(long instanceId, T graphMetadata, S artifactMetadata, AttributeDesugaring attributeDesugaring) {
+    public AbstractComponentGraphResolveState(long instanceId, T graphMetadata, AttributeDesugaring attributeDesugaring) {
         this.instanceId = instanceId;
         this.graphMetadata = graphMetadata;
-        this.artifactMetadata = artifactMetadata;
         this.attributeDesugaring = attributeDesugaring;
     }
+
     @Override
     public String toString() {
         return getId().toString();
@@ -69,22 +63,17 @@ public abstract class AbstractComponentGraphResolveState<T extends ComponentGrap
         return graphMetadata;
     }
 
-    public S getArtifactMetadata() {
-        return artifactMetadata;
-    }
-
     @Override
-    public GraphSelectionCandidates getCandidatesForGraphVariantSelection() {
-        Optional<List<? extends VariantGraphResolveState>> variants = getVariantsForGraphTraversal();
-        return new DefaultGraphSelectionCandidates(variants);
-    }
+    public abstract GraphSelectionCandidates getCandidatesForGraphVariantSelection();
 
     @Override
     public boolean isAdHoc() {
         return false;
     }
 
-    protected abstract Optional<List<? extends VariantGraphResolveState>> getVariantsForGraphTraversal();
+    protected AttributeDesugaring getAttributeDesugaring() {
+        return attributeDesugaring;
+    }
 
     @Nullable
     @Override
@@ -97,8 +86,9 @@ public abstract class AbstractComponentGraphResolveState<T extends ComponentGrap
         return this;
     }
 
+    @Override
     public void resolveArtifactsWithType(ArtifactResolver artifactResolver, ArtifactType artifactType, BuildableArtifactSetResolveResult result) {
-        artifactResolver.resolveArtifactsWithType(getResolveMetadata(), artifactType, result);
+        artifactResolver.resolveArtifactsWithType(getArtifactMetadata(), artifactType, result);
     }
 
     protected ImmutableCapabilities capabilitiesFor(ImmutableCapabilities capabilities) {
@@ -109,16 +99,18 @@ public abstract class AbstractComponentGraphResolveState<T extends ComponentGrap
         }
     }
 
-    protected abstract class AbstractVariantGraphResolveState implements VariantGraphResolveState {
+    protected abstract static class AbstractVariantGraphResolveState implements VariantGraphResolveState {
         private final Lazy<ResolvedVariantResult> publicView;
+        private final AbstractComponentGraphResolveState<?> component;
 
-        public AbstractVariantGraphResolveState() {
+        public AbstractVariantGraphResolveState(AbstractComponentGraphResolveState<?> component) {
             this.publicView = Lazy.locking().of(() -> createVariantResult(null));
+            this.component = component;
         }
 
         @Override
         public boolean isAdHoc() {
-            return AbstractComponentGraphResolveState.this.isAdHoc();
+            return component.isAdHoc();
         }
 
         @Override
@@ -135,48 +127,11 @@ public abstract class AbstractComponentGraphResolveState<T extends ComponentGrap
         private DefaultResolvedVariantResult createVariantResult(@Nullable ResolvedVariantResult externalVariant) {
             VariantGraphResolveMetadata metadata = getMetadata();
             return new DefaultResolvedVariantResult(
-                getId(),
+                component.getId(),
                 Describables.of(metadata.getName()),
-                attributeDesugaring.desugar(metadata.getAttributes()),
-                capabilitiesFor(metadata.getCapabilities()),
+                component.attributeDesugaring.desugar(metadata.getAttributes()),
+                component.capabilitiesFor(metadata.getCapabilities()),
                 externalVariant);
-        }
-    }
-
-    private class DefaultGraphSelectionCandidates implements GraphSelectionCandidates {
-        private final Optional<List<? extends VariantGraphResolveState>> variants;
-
-        public DefaultGraphSelectionCandidates(Optional<List<? extends VariantGraphResolveState>> variants) {
-            this.variants = variants;
-        }
-
-        @Override
-        public boolean isUseVariants() {
-            return variants.isPresent() && !variants.get().isEmpty();
-        }
-
-        @Override
-        public List<? extends VariantGraphResolveState> getVariants() {
-            return variants.get();
-        }
-
-        @Nullable
-        @Override
-        public ConfigurationGraphResolveState getLegacyConfiguration() {
-            return getConfiguration(Dependency.DEFAULT_CONFIGURATION);
-        }
-
-        @Override
-        public List<? extends ConfigurationGraphResolveMetadata> getCandidateConfigurations() {
-            Set<String> configurationNames = graphMetadata.getConfigurationNames();
-            ImmutableList.Builder<ConfigurationGraphResolveMetadata> builder = new ImmutableList.Builder<>();
-            for (String configurationName : configurationNames) {
-                ConfigurationGraphResolveMetadata configuration = graphMetadata.getConfiguration(configurationName);
-                if (configuration.isCanBeConsumed()) {
-                    builder.add(configuration);
-                }
-            }
-            return builder.build();
         }
     }
 }

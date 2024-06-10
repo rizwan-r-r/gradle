@@ -66,6 +66,7 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.jvm.toolchain.JvmVendorSpec
+import org.gradle.jvm.toolchain.internal.LocationListInstallationSupplier.JAVA_INSTALLATIONS_PATHS_PROPERTY
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toUpperCaseAsciiOnly
 
 
@@ -195,14 +196,13 @@ val Project.buildBranch: Provider<String>
 
 /**
  * The logical branch.
- * For non-pre-tested commit branches this is the same as {@link #buildBranch}.
- * For pre-tested commit branches, this is the branch which will be forwarded to the state on this branch when
- * pre-tested commit passes.
+ * For non-merge-queue branches this is the same as {@link #buildBranch}.
+ * For merge-queue branches, this is the base branch.
  *
- * For example, for the pre-tested commit branch "pre-test/master/queue/alice/personal-branch" the logical branch is "master".
+ * For example, for the merge queue branch "gh-readonly-queue/master/pr-12345-1a2b3c4d" the logical branch is "master".
  */
 val Project.logicalBranch: Provider<String>
-    get() = buildBranch.map(::toPreTestedCommitBaseBranch)
+    get() = buildBranch.map(::toMergeQueueBaseBranch)
 
 
 val Project.buildCommitId: Provider<String>
@@ -262,6 +262,9 @@ val Project.maxTestDistributionRemoteExecutors: Int?
 
 val Project.maxTestDistributionLocalExecutors: Int?
     get() = gradleProperty(MAX_TEST_DISTRIBUTION_LOCAL_EXECUTORS).orNull?.toInt()
+
+val Project.toolchainInstallationPaths: String?
+    get() = gradleProperty(JAVA_INSTALLATIONS_PATHS_PROPERTY).orNull
 
 val Project.flakyTestStrategy: FlakyTestStrategy
     get() = gradleProperty(FLAKY_TEST).let {
@@ -356,7 +359,9 @@ val Project.predictiveTestSelectionEnabled: Provider<Boolean>
         .orElse(
             buildBranch.zip(buildRunningOnCi) { branch, ci ->
                 val protectedBranches = listOf("master", "release")
-                ci && !protectedBranches.contains(branch) && !branch.startsWith("pre-test/")
+                ci && !protectedBranches.contains(branch)
+                    && !branch.startsWith("pre-test/")
+                    && !branch.startsWith("gh-readonly-queue/")
             }
         ).zip(project.rerunAllTests) { enabled, rerunAllTests ->
             enabled && !rerunAllTests

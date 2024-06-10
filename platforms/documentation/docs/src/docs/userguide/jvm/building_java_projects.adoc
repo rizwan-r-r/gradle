@@ -146,7 +146,7 @@ Following two simple best practices will avoid this problem:
 
 1. Don't create configurations with names that will be used by source sets, such as names ending in `Api`, `Implementation`, `ApiElements`, `CompileOnly`, `CompileOnlyApi`, `RuntimeOnly`, `RuntimeClasspath` or `RuntimeElements`.
 (This list is not exhaustive.)
-1. Create any custom source sets prior to any custom configurations.
+2. Create any custom source sets prior to any custom configurations.
 
 Remember that any time you reference a configuration within the `configurations` container - with or without supplying an initialization action - Gradle will create the configuration.
 Sometimes when using the Groovy DSL this creation is not obvious, as in the example below, where `myCustomConfiguration` is created prior to the call to `extendsFrom`.
@@ -155,8 +155,6 @@ Sometimes when using the Groovy DSL this creation is not obvious, as in the exam
 ====
 include::sample[dir="snippets/java/customConfs-creation/groovy",files="build.gradle[tags=create-configurations]"]
 ====
-
-For more information see <<authoring_maintainable_build_scripts.adoc#sec:dont_anticipate_configuration_creation, Don't anticipate configuration creation>>.
 
 [[sec:java_dependency_management_overview]]
 == Managing your dependencies

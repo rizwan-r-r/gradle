@@ -53,6 +53,7 @@ import static org.gradle.internal.Cast.cast;
 import static org.gradle.internal.Cast.castNullable;
 import static org.gradle.internal.Cast.uncheckedNonnullCast;
 
+@SuppressWarnings("join_with_collect")
 public abstract class CollectionUtils {
 
     /**
@@ -235,12 +236,13 @@ public abstract class CollectionUtils {
      *
      * Nulls are not removed, they are left intact.
      *
-     * If a non null object cannot be cast to the target type, a ClassCastException will be thrown.
+     * If a non-null object cannot be cast to the target type, a ClassCastException will be thrown.
      *
      * @param things The things to flatten
      * @param <T> The target type in the flattened list
      * @return A flattened list of the given things
      */
+    @SuppressWarnings("MixedMutabilityReturnType")
     public static <T> List<T> flattenCollections(Class<T> type, Object... things) {
         if (things == null) {
             return Collections.singletonList(null);
@@ -541,6 +543,15 @@ public abstract class CollectionUtils {
     }
 
     /**
+     * Creates a string with {@code toString()} of each transformed object with the given separator.
+     *
+     * @see #join(String, Object[])
+     */
+    public static <R, I> String join(String separator, I[] objects, InternalTransformer<? extends R, ? super I> transformer) {
+        return join(separator, collect(objects, transformer));
+    }
+
+    /**
      * Creates a string with {@code toString()} of each object with the given separator.
      *
      * <pre>
@@ -574,6 +585,16 @@ public abstract class CollectionUtils {
             }
         }
         return string.toString();
+    }
+
+    /**
+     * Creates a string with {@code toString()} of each transformed object with the given separator.
+     *
+     * @see #join(String, Iterable)
+     */
+    public static <R, I> String join(String separator, Iterable<? extends I> objects, InternalTransformer<? extends R, ? super I> transformer) {
+        //noinspection join_with_collect
+        return join(separator, collect(objects, transformer));
     }
 
     /**

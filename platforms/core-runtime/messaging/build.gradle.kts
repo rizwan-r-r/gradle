@@ -7,13 +7,21 @@ description = "Implementation of messaging between Gradle processes"
 gradlebuildJava.usedInWorkers()
 
 dependencies {
-    implementation(project(":base-services"))
+    api(projects.concurrent)
+    api(projects.javaLanguageExtensions)
+    api(projects.serialization)
+    api(projects.serviceProvider)
+    api(project(":base-services"))
 
-    implementation(libs.fastutil)
-    implementation(libs.slf4jApi)
+    api(libs.jsr305)
+    api(libs.slf4jApi)
+
+    implementation(projects.io)
+    implementation(project(":build-operations"))
+
     implementation(libs.guava)
-    implementation(libs.kryo)
 
+    testImplementation(testFixtures(projects.serialization))
     testImplementation(testFixtures(project(":core")))
 
     testFixturesImplementation(project(":base-services"))

@@ -24,20 +24,27 @@ tasks.named<JavaCompile>("jmhCompileGeneratedClasses") {
 moduleIdentity.createBuildReceipt()
 
 dependencies {
-    api(project(":base-annotations"))
-    api(project(":worker-services"))
+    api(projects.concurrent)
+    api(projects.javaLanguageExtensions)
+    api(projects.fileTemp)
+    api(projects.serviceProvider)
     api(project(":hashing"))
     api(project(":build-operations"))
+    api(libs.inject)
+    api(libs.jsr305)
+    api(libs.guava)
+
+    implementation(projects.io)
+    implementation(projects.time)
 
     implementation(libs.asm)
     implementation(libs.commonsIo)
     implementation(libs.commonsLang)
-    implementation(libs.guava)
-    implementation(libs.inject)
     implementation(libs.slf4jApi)
 
     integTestImplementation(project(":logging"))
 
+    testFixturesApi(project(":hashing"))
     testFixturesImplementation(libs.guava)
     testImplementation(testFixtures(project(":core")))
     testImplementation(libs.xerces)

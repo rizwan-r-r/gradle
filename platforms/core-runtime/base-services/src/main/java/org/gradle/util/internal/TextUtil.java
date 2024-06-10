@@ -19,6 +19,7 @@ package org.gradle.util.internal;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
+import org.apache.commons.lang.StringUtils;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.SystemProperties;
 
@@ -32,6 +33,8 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+// TODO Do not rely on default encoding
+@SuppressWarnings("StringCaseLocaleUsage")
 public class TextUtil {
     private static final Pattern WHITESPACE = Pattern.compile("\\s*");
     private static final Pattern UPPER_CASE = Pattern.compile("(?=\\p{Upper})");
@@ -370,6 +373,6 @@ public class TextUtil {
     }
 
     public static String screamingSnakeToKebabCase(String text) {
-        return toLowerCaseLocaleSafe(text).replaceAll("_", "-");
+        return StringUtils.replace(toLowerCaseLocaleSafe(text), "_", "-");
     }
 }

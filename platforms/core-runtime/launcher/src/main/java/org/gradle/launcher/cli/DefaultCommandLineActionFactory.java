@@ -25,7 +25,9 @@ import org.gradle.api.logging.configuration.LoggingConfiguration;
 import org.gradle.cli.CommandLineArgumentException;
 import org.gradle.cli.CommandLineParser;
 import org.gradle.cli.ParsedCommandLine;
+import org.gradle.configuration.DefaultBuildClientMetaData;
 import org.gradle.configuration.GradleLauncherMetaData;
+import org.gradle.initialization.BuildClientMetaData;
 import org.gradle.initialization.layout.BuildLayoutFactory;
 import org.gradle.internal.Actions;
 import org.gradle.internal.buildevents.BuildExceptionReporter;
@@ -83,8 +85,8 @@ public class DefaultCommandLineActionFactory implements CommandLineActionFactory
             new BuildExceptionReporter(loggingServices.get(StyledTextOutputFactory.class), loggingConfiguration, clientMetaData()));
     }
 
-    private static GradleLauncherMetaData clientMetaData() {
-        return new GradleLauncherMetaData();
+    private static BuildClientMetaData clientMetaData() {
+        return new DefaultBuildClientMetaData(new GradleLauncherMetaData());
     }
 
     private static void showUsage(PrintStream out, CommandLineParser parser) {
@@ -194,26 +196,20 @@ public class DefaultCommandLineActionFactory implements CommandLineActionFactory
         public void execute(ExecutionListener executionListener) {
             DefaultGradleVersion currentVersion = DefaultGradleVersion.current();
 
-            final StringBuilder sb = new StringBuilder();
-            sb.append("%n------------------------------------------------------------%nGradle ");
-            sb.append(currentVersion.getVersion());
-            sb.append("%n------------------------------------------------------------%n%nBuild time:   ");
-            sb.append(currentVersion.getBuildTimestamp());
-            sb.append("%nRevision:     ");
-            sb.append(currentVersion.getGitRevision());
-            sb.append("%n%nKotlin:       ");
-            sb.append(KotlinDslVersion.current().getKotlinVersion());
-            sb.append("%nGroovy:       ");
-            sb.append(ReleaseInfo.getVersion());
-            sb.append("%nAnt:          ");
-            sb.append(Main.getAntVersion());
-            sb.append("%nJVM:          ");
-            sb.append(Jvm.current());
-            sb.append("%nOS:           ");
-            sb.append(OperatingSystem.current());
-            sb.append("%n");
-
-            System.out.println(String.format(sb.toString()));
+            System.out.println();
+            System.out.println("------------------------------------------------------------");
+            System.out.println("Gradle " + currentVersion.getVersion());
+            System.out.println("------------------------------------------------------------");
+            System.out.println();
+            System.out.println("Build time:   " + currentVersion.getBuildTimestamp());
+            System.out.println("Revision:     " + currentVersion.getGitRevision());
+            System.out.println();
+            System.out.println("Kotlin:       " + KotlinDslVersion.current().getKotlinVersion());
+            System.out.println("Groovy:       " + ReleaseInfo.getVersion());
+            System.out.println("Ant:          " + Main.getAntVersion());
+            System.out.println("JVM:          " + Jvm.current());
+            System.out.println("OS:           " + OperatingSystem.current());
+            System.out.println();
         }
     }
 
@@ -230,8 +226,8 @@ public class DefaultCommandLineActionFactory implements CommandLineActionFactory
     private class ParseAndBuildAction extends NonParserConfiguringCommandLineActionCreator implements Action<ExecutionListener> {
         private final ServiceRegistry loggingServices;
         private final List<String> args;
-        private List<CommandLineActionCreator> actionCreators;
-        private CommandLineParser parser = new CommandLineParser();
+        private final List<CommandLineActionCreator> actionCreators;
+        private final CommandLineParser parser = new CommandLineParser();
 
         private ParseAndBuildAction(ServiceRegistry loggingServices, List<String> args) {
             this.loggingServices = loggingServices;
@@ -341,10 +337,10 @@ public class DefaultCommandLineActionFactory implements CommandLineActionFactory
                 AllProperties properties = layoutToPropertiesConverter.convert(initialProperties, buildLayout);
 
                 // Calculate the logging configuration
-                loggingBuildOptions.convert(parsedCommandLine, properties, loggingConfiguration);
+                loggingBuildOptions.convert(parsedCommandLine, properties.getProperties(), loggingConfiguration);
 
                 // Get configuration for showing the welcome message
-                welcomeMessageConverter.convert(parsedCommandLine, properties, welcomeMessageConfiguration);
+                welcomeMessageConverter.convert(parsedCommandLine, properties.getProperties(), welcomeMessageConfiguration);
             } catch (CommandLineArgumentException e) {
                 // Ignore, deal with this problem later
             }

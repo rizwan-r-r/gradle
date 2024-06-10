@@ -22,14 +22,12 @@ import org.gradle.internal.remote.internal.Connection;
 import org.gradle.launcher.daemon.protocol.Command;
 import org.gradle.launcher.daemon.protocol.Failure;
 import org.gradle.launcher.daemon.protocol.Finished;
-import org.gradle.launcher.daemon.protocol.InvalidateVirtualFileSystem;
+import org.gradle.launcher.daemon.protocol.InvalidateVirtualFileSystemAfterChange;
 import org.gradle.launcher.daemon.protocol.Message;
 import org.gradle.launcher.daemon.protocol.Result;
 import org.gradle.launcher.daemon.registry.DaemonInfo;
 import org.gradle.launcher.daemon.registry.DaemonRegistry;
 import org.gradle.launcher.daemon.server.api.DaemonStateControl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,8 +37,6 @@ import static org.gradle.launcher.daemon.server.api.DaemonStateControl.State.Can
 import static org.gradle.launcher.daemon.server.api.DaemonStateControl.State.Idle;
 
 public class NotifyDaemonAboutChangedPathsClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotifyDaemonAboutChangedPathsClient.class);
-
     private final DaemonConnector connector;
     private final IdGenerator<UUID> idGenerator;
     private final DaemonRegistry daemonRegistry;
@@ -59,7 +55,7 @@ public class NotifyDaemonAboutChangedPathsClient {
                 if (connection == null) {
                     continue;
                 }
-                dispatch(connection, new InvalidateVirtualFileSystem(changedPaths, idGenerator.generateId(), connection.getDaemon().getToken()));
+                dispatch(connection, new InvalidateVirtualFileSystemAfterChange(changedPaths, idGenerator.generateId(), connection.getDaemon().getToken()));
             }
         }
     }

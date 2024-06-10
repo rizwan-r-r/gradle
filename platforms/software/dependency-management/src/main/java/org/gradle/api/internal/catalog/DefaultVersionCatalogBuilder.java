@@ -40,10 +40,11 @@ import org.gradle.api.internal.catalog.problems.VersionCatalogProblemId;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.problems.internal.Problem;
 import org.gradle.api.problems.ProblemSpec;
+import org.gradle.api.problems.internal.GradleCoreProblemGroup;
 import org.gradle.api.problems.internal.InternalProblemSpec;
 import org.gradle.api.problems.internal.InternalProblems;
+import org.gradle.api.problems.internal.Problem;
 import org.gradle.api.provider.Property;
 import org.gradle.internal.FileUtils;
 import org.gradle.internal.classpath.Instrumented;
@@ -70,7 +71,7 @@ import java.util.stream.Collectors;
 
 import static org.gradle.api.internal.catalog.parser.DependenciesModelHelper.ALIAS_REGEX;
 import static org.gradle.api.internal.catalog.problems.DefaultCatalogProblemBuilder.VERSION_CATALOG_PROBLEMS;
-import static org.gradle.api.internal.catalog.problems.DefaultCatalogProblemBuilder.throwErrorWithNewProblemsApi;
+import static org.gradle.api.internal.catalog.problems.DefaultCatalogProblemBuilder.throwError;
 import static org.gradle.api.internal.catalog.problems.VersionCatalogProblemId.ALIAS_NOT_FINISHED;
 import static org.gradle.api.internal.catalog.problems.VersionCatalogProblemId.CATALOG_FILE_DOES_NOT_EXIST;
 import static org.gradle.api.internal.catalog.problems.VersionCatalogProblemId.INVALID_ALIAS_NOTATION;
@@ -166,6 +167,7 @@ public abstract class DefaultVersionCatalogBuilder implements VersionCatalogBuil
         return model.get();
     }
 
+    @Override
     public void withContext(String context, Runnable action) {
         String oldContext = currentContext;
         currentContext = intern(context);
@@ -212,14 +214,15 @@ public abstract class DefaultVersionCatalogBuilder implements VersionCatalogBuil
     }
 
     private static InternalProblemSpec configureVersionCatalogError(InternalProblemSpec builder, String message, VersionCatalogProblemId catalogProblemId) {
-        return builder.label(message)
+        return builder.
+            id(TextUtil.screamingSnakeToKebabCase(catalogProblemId.name()), "version catalog error", GradleCoreProblemGroup.versionCatalog())
+            .contextualLabel(message)
             .documentedAt(userManual(VERSION_CATALOG_PROBLEMS, catalogProblemId.name().toLowerCase()))
-            .category("dependency-version-catalog", TextUtil.screamingSnakeToKebabCase(catalogProblemId.name()))
             .severity(ERROR);
     }
 
     private static RuntimeException throwVersionCatalogProblemException(InternalProblems problemsService, Problem problem) {
-        throw throwErrorWithNewProblemsApi(problemsService, "Invalid catalog definition", ImmutableList.of(problem));
+        throw throwError(problemsService, "Invalid catalog definition", ImmutableList.of(problem));
     }
 
     @Nonnull

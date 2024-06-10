@@ -40,6 +40,7 @@ import org.gradle.internal.time.Clock;
 public class ProfileEventAdapter implements InternalBuildListener, ProjectEvaluationListener, TaskListenerInternal, DependencyResolutionListener, TransformExecutionListener {
     private final BuildStartedTime buildStartedTime;
     private final Clock clock;
+    @SuppressWarnings("ThreadLocalUsage")
     private final ThreadLocal<ContinuousOperation> currentTransform = new ThreadLocal<>();
     private final BuildProfile buildProfile;
 
@@ -69,8 +70,7 @@ public class ProfileEventAdapter implements InternalBuildListener, ProjectEvalua
 
     @Override
     public void projectsEvaluated(Gradle gradle) {
-        buildProfile.setBuildDir(gradle.getRootProject().getLayout().getBuildDirectory().getAsFile().get());
-        buildProfile.setProjectsEvaluated(clock.getCurrentTime());
+        // no-op
     }
 
     @SuppressWarnings("deprecation")

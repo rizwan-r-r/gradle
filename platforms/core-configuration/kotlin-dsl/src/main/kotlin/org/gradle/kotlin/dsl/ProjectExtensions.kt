@@ -26,7 +26,7 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler
 
 import org.gradle.api.initialization.dsl.ScriptHandler
 
-import org.gradle.api.internal.artifacts.dependencies.DefaultSelfResolvingDependency
+import org.gradle.api.internal.artifacts.dependencies.DefaultFileCollectionDependency
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyFactoryInternal
 import org.gradle.api.internal.file.FileCollectionInternal
 
@@ -41,6 +41,7 @@ import org.gradle.kotlin.dsl.provider.fileCollectionOf
 import org.gradle.kotlin.dsl.provider.gradleKotlinDslOf
 import org.gradle.kotlin.dsl.support.ScriptHandlerScopeInternal
 import org.gradle.kotlin.dsl.support.invalidPluginsCall
+import org.gradle.kotlin.dsl.support.serviceOf
 
 import org.gradle.plugin.use.PluginDependenciesSpec
 
@@ -252,7 +253,7 @@ fun Project.artifacts(configuration: ArtifactHandlerScope.() -> Unit) =
  * Locates a property on [Project].
  */
 operator fun Project.provideDelegate(any: Any?, property: KProperty<*>): PropertyDelegate =
-    propertyDelegateFor(this, property)
+    propertyDelegateFor(serviceOf(), this, property)
 
 
 /**
@@ -298,7 +299,7 @@ inline fun <reified T : Any> Project.container(noinline factory: (String) -> T):
  * @return The dependency.
  */
 fun Project.gradleKotlinDsl(): Dependency =
-    DefaultSelfResolvingDependency(
+    DefaultFileCollectionDependency(
         OpaqueComponentIdentifier(DependencyFactoryInternal.ClassPathNotation.GRADLE_KOTLIN_DSL),
         project.fileCollectionOf(
             gradleKotlinDslOf(project),

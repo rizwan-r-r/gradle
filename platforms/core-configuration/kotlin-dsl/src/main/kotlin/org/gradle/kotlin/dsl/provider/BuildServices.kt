@@ -26,16 +26,20 @@ import org.gradle.api.internal.initialization.loadercache.DefaultClasspathHasher
 import org.gradle.groovy.scripts.internal.ScriptSourceHasher
 import org.gradle.initialization.ClassLoaderScopeRegistry
 import org.gradle.initialization.GradlePropertiesController
+import org.gradle.internal.buildoption.InternalOptions
 import org.gradle.internal.classloader.ClasspathHasher
 import org.gradle.internal.classpath.CachedClasspathTransformer
+import org.gradle.internal.classpath.transforms.ClasspathElementTransformFactoryForLegacy
 import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.execution.ExecutionEngine
 import org.gradle.internal.execution.FileCollectionSnapshotter
 import org.gradle.internal.execution.InputFingerprinter
 import org.gradle.internal.fingerprint.classpath.ClasspathFingerprinter
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
-import org.gradle.internal.operations.BuildOperationExecutor
+import org.gradle.internal.operations.BuildOperationRunner
 import org.gradle.internal.scripts.ScriptExecutionListener
+import org.gradle.internal.service.Provides
+import org.gradle.internal.service.ServiceRegistrationProvider
 import org.gradle.kotlin.dsl.cache.KotlinDslWorkspaceProvider
 import org.gradle.kotlin.dsl.normalization.KotlinCompileClasspathFingerprinter
 import org.gradle.kotlin.dsl.support.EmbeddedKotlinProvider
@@ -50,9 +54,9 @@ const val KOTLIN_SCRIPT_COMPILATION_AVOIDANCE_ENABLED_PROPERTY =
 
 
 internal
-object BuildServices {
+object BuildServices : ServiceRegistrationProvider {
 
-    @Suppress("unused")
+    @Provides
     fun createKotlinScriptClassPathProvider(
         moduleRegistry: ModuleRegistry,
         classPathRegistry: ClassPathRegistry,
@@ -67,7 +71,7 @@ object BuildServices {
             gradleApiJarsProviderFor(dependencyFactory),
         )
 
-    @Suppress("unused")
+    @Provides
     fun createPluginRequestsHandler(
         pluginRequestApplicator: PluginRequestApplicator,
         autoAppliedPluginHandler: AutoAppliedPluginHandler
@@ -75,11 +79,11 @@ object BuildServices {
 
         PluginRequestsHandler(pluginRequestApplicator, autoAppliedPluginHandler)
 
-    @Suppress("unused")
+    @Provides
     fun createClassPathModeExceptionCollector() =
         ClassPathModeExceptionCollector()
 
-    @Suppress("unused")
+    @Provides
     fun createKotlinScriptEvaluator(
         classPathProvider: KotlinScriptClassPathProvider,
         classloadingCache: KotlinScriptClassloadingCache,
@@ -92,7 +96,7 @@ object BuildServices {
         classpathHasher: ClasspathHasher,
         implicitImports: ImplicitImports,
         progressLoggerFactory: ProgressLoggerFactory,
-        buildOperationExecutor: BuildOperationExecutor,
+        buildOperationRunner: BuildOperationRunner,
         cachedClasspathTransformer: CachedClasspathTransformer,
         listenerManager: ListenerManager,
         executionEngine: ExecutionEngine,
@@ -100,7 +104,9 @@ object BuildServices {
         @Suppress("UNUSED_PARAMETER") kotlinCompilerContextDisposer: KotlinCompilerContextDisposer,
         fileCollectionFactory: FileCollectionFactory,
         inputFingerprinter: InputFingerprinter,
+        internalOptions: InternalOptions,
         gradlePropertiesController: GradlePropertiesController,
+        transformFactoryForLegacy: ClasspathElementTransformFactoryForLegacy
     ): KotlinScriptEvaluator =
 
         StandardKotlinScriptEvaluator(
@@ -115,17 +121,19 @@ object BuildServices {
             classpathHasher,
             implicitImports,
             progressLoggerFactory,
-            buildOperationExecutor,
+            buildOperationRunner,
             cachedClasspathTransformer,
             listenerManager.getBroadcaster(ScriptExecutionListener::class.java),
             executionEngine,
             workspaceProvider,
             fileCollectionFactory,
             inputFingerprinter,
+            internalOptions,
             gradlePropertiesController,
+            transformFactoryForLegacy
         )
 
-    @Suppress("unused")
+    @Provides
     fun createCompileClasspathHasher(
         cacheService: ResourceSnapshotterCacheService,
         fileCollectionSnapshotter: FileCollectionSnapshotter,
@@ -146,7 +154,7 @@ object BuildServices {
             fileCollectionFactory
         )
 
-    @Suppress("unused")
+    @Provides
     fun createKotlinCompilerContextDisposer(listenerManager: ListenerManager) =
         KotlinCompilerContextDisposer(listenerManager)
 

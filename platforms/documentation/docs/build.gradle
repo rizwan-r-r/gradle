@@ -38,6 +38,13 @@ configurations {
     docsTestRuntimeClasspath.extendsFrom(integTestDistributionRuntimeOnly)
 }
 
+configurations.docsTestImplementation {
+    // The 'gradlebuild.generate-samples' plugin uses the 'org.gradle.samples' plugin from the old gradle/guides build, which pulls in slf4j-simple, which we don't want.
+    // Because this is done directly by the plugin application logic, we can't use a ComponentMetadataRule to exclude it.
+    // See: https://github.com/gradle/guides/blob/ba018cec535d90f75876bfcca29381d213a956cc/subprojects/gradle-guides-plugin/src/main/java/org/gradle/docs/samples/internal/SamplesDocumentationPlugin.java#L335
+    exclude([group: "org.slf4j", module: "slf4j-simple"])
+}
+
 dependencies {
     // generate Javadoc for the full Gradle distribution
     runtimeOnly project(":distributions-full")
@@ -68,13 +75,9 @@ dependencies {
     integTestDistributionRuntimeOnly project(":distributions-full")
 }
 
-configurations.docsTestRuntimeClasspath {
-    exclude group: "org.slf4j", module: "slf4j-simple"
-}
-
 asciidoctorj {
-    version = '2.4.2'
-    modules.pdf.version '1.5.4'
+    version = '2.5.11'
+    modules.pdf.version '2.3.10'
 }
 
 tasks.withType(AsciidoctorTask).configureEach { task ->
@@ -94,6 +97,9 @@ gradleDocumentation {
     javadocs {
         javaApi = project.uri("https://docs.oracle.com/javase/8/docs/api")
         groovyApi = project.uri("https://docs.groovy-lang.org/docs/groovy-${libs.groovyVersion}/html/gapi")
+    }
+    kotlinDslReference {
+        dokkaVersionOverride = "1.9.10"
     }
 }
 
@@ -651,6 +657,13 @@ tasks.named("docsTest") { task ->
 
         if (javaVersion.isCompatibleWith(JavaVersion.VERSION_12)) {
             excludeTestsMatching "org.gradle.docs.samples.*.snippet-test-kit-gradle-version_*_testKitFunctionalTestSpockGradleDistribution.sample"
+        }
+
+        if (javaVersion.isCompatibleWith(JavaVersion.VERSION_22)) {
+            // Does not work due to JVM validation issue: https://youtrack.jetbrains.com/issue/KT-66919
+            excludeTestsMatching "org.gradle.docs.samples.*.building-kotlin-*"
+            // Incompatible for unknown reasons, investigation ongoing
+            excludeTestsMatching "org.gradle.docs.samples.*.structuring-software-projects_*_build-android-app.sample"
         }
 
         if (OperatingSystem.current().macOsX && System.getProperty("os.arch") == "aarch64") {

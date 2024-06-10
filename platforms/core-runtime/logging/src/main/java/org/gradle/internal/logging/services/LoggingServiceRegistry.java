@@ -20,6 +20,7 @@ import org.gradle.api.logging.LogLevel;
 import org.gradle.internal.logging.LoggingManagerInternal;
 import org.gradle.internal.logging.config.LoggingSourceSystem;
 import org.gradle.internal.logging.config.LoggingSystemAdapter;
+import org.gradle.internal.logging.console.DefaultUserInputReceiver;
 import org.gradle.internal.logging.events.OutputEventListener;
 import org.gradle.internal.logging.sink.OutputEventListenerManager;
 import org.gradle.internal.logging.sink.OutputEventRenderer;
@@ -30,6 +31,8 @@ import org.gradle.internal.logging.source.JavaUtilLoggingSystem;
 import org.gradle.internal.logging.source.NoOpLoggingSystem;
 import org.gradle.internal.logging.text.StyledTextOutputFactory;
 import org.gradle.internal.service.DefaultServiceRegistry;
+import org.gradle.internal.service.Provides;
+import org.gradle.internal.service.ServiceRegistrationProvider;
 import org.gradle.internal.time.Clock;
 import org.gradle.internal.time.Time;
 
@@ -46,7 +49,8 @@ import org.gradle.internal.time.Time;
  */
 public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
 
-    public static final Object NO_OP = new Object() {
+    public static final ServiceRegistrationProvider NO_OP = new ServiceRegistrationProvider() {
+        @Provides
         OutputEventListener createOutputEventListener() {
             return OutputEventListener.NO_OP;
         }
@@ -54,6 +58,7 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
 
     private TextStreamOutputEventListener stdoutListener;
 
+    private final DefaultUserInputReceiver userInput = new DefaultUserInputReceiver();
     protected final OutputEventRenderer renderer = makeOutputEventRenderer();
     protected final OutputEventListenerManager outputEventListenerManager = new OutputEventListenerManager(renderer);
 
@@ -111,10 +116,12 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
         return new NestedLogging();
     }
 
+    @Provides
     protected Clock createTimeProvider() {
         return Time.clock();
     }
 
+    @Provides
     protected StyledTextOutputFactory createStyledTextOutputFactory() {
         return new DefaultStyledTextOutputFactory(getStdoutListener(), get(Clock.class));
     }
@@ -126,6 +133,7 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
         return stdoutListener;
     }
 
+    @Provides
     protected DefaultLoggingManagerFactory createLoggingManagerFactory() {
         OutputEventListener outputEventBroadcaster = outputEventListenerManager.getBroadcaster();
 
@@ -141,17 +149,26 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
             stderr);
     }
 
+    @Provides
     protected OutputEventListener createOutputEventListener(OutputEventListenerManager manager) {
         return manager.getBroadcaster();
     }
 
+    @Provides
     protected OutputEventListenerManager createOutputEventListenerManager() {
         return outputEventListenerManager;
     }
 
-    // Intentionally not a “create” method as this should not be exposed as a service
+    @Provides
+    protected DefaultUserInputReceiver createUserInput() {
+        return userInput;
+    }
+
+    // Intentionally not a “create” method as this should not be exposed as a service
     protected OutputEventRenderer makeOutputEventRenderer() {
-        return new OutputEventRenderer(Time.clock());
+        OutputEventRenderer eventRenderer = new OutputEventRenderer(Time.clock(), userInput);
+        userInput.attachConsole(eventRenderer);
+        return eventRenderer;
     }
 
     private static class CommandLineLogging extends LoggingServiceRegistry {
@@ -159,6 +176,7 @@ public abstract class LoggingServiceRegistry extends DefaultServiceRegistry {
 
     private static class NestedLogging extends LoggingServiceRegistry {
 
+        @Provides
         @Override
         protected DefaultLoggingManagerFactory createLoggingManagerFactory() {
             // Don't configure anything

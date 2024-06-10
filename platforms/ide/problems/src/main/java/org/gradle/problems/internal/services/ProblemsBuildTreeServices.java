@@ -18,32 +18,21 @@ package org.gradle.problems.internal.services;
 
 import org.gradle.api.problems.internal.DefaultProblems;
 import org.gradle.api.problems.internal.InternalProblems;
-import org.gradle.api.problems.internal.ProblemTransformer;
-import org.gradle.internal.operations.BuildOperationAncestryTracker;
 import org.gradle.internal.operations.BuildOperationProgressEventEmitter;
-import org.gradle.problems.buildtree.ProblemDiagnosticsFactory;
-import org.gradle.problems.internal.OperationListener;
+import org.gradle.internal.operations.CurrentBuildOperationRef;
+import org.gradle.internal.service.Provides;
+import org.gradle.internal.service.ServiceRegistrationProvider;
+import org.gradle.problems.buildtree.ProblemStream;
 import org.gradle.problems.internal.emitters.BuildOperationBasedProblemEmitter;
-import org.gradle.problems.internal.transformers.PluginIdLocationTransformer;
-import org.gradle.problems.internal.transformers.StackLocationTransformer;
 
-import java.util.List;
+public class ProblemsBuildTreeServices implements ServiceRegistrationProvider {
 
-public class ProblemsBuildTreeServices {
-
+    @Provides
     InternalProblems createProblemsService(
         BuildOperationProgressEventEmitter buildOperationProgressEventEmitter,
-        List<ProblemTransformer> transformers
+        ProblemStream problemStream
     ) {
         BuildOperationBasedProblemEmitter emitter = new BuildOperationBasedProblemEmitter(buildOperationProgressEventEmitter);
-        return new DefaultProblems(emitter, transformers);
-    }
-
-    ProblemTransformer createPluginIdLocationTransformer(BuildOperationAncestryTracker buildOperationAncestryTracker, OperationListener operationListener) {
-        return new PluginIdLocationTransformer(buildOperationAncestryTracker, operationListener);
-    }
-
-    ProblemTransformer createStackLocationTransformer(ProblemDiagnosticsFactory problemDiagnosticsFactory) {
-        return new StackLocationTransformer(problemDiagnosticsFactory.newStream());
+        return new DefaultProblems(emitter, problemStream, CurrentBuildOperationRef.instance());
     }
 }

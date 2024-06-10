@@ -32,9 +32,14 @@ import java.util.Set;
 public interface VariantGraphResolveMetadata extends HasAttributes {
     /**
      * Returns the name for this variant, which is unique for the variants of its owning component.
+     *
+     * In general, this method should be avoided. The internal engine should not need to know the name of a node and
+     * should instead identify nodes based on their integer node ID. This method should only be used for
+     * diagnostics/reporting and for implementing existing public API methods that require this field.
      */
     String getName();
 
+    @Override
     ImmutableAttributes getAttributes();
 
     /**
@@ -53,6 +58,13 @@ public interface VariantGraphResolveMetadata extends HasAttributes {
     boolean isTransitive();
 
     boolean isExternalVariant();
+
+    /**
+     * Returns true if this variant is deprecated and consuming it in a dependency graph should emit a warning. False otherwise.
+     */
+    default boolean isDeprecated() {
+        return false;
+    }
 
     interface Subvariant {
         String getName();
